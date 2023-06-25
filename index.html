@@ -20,22 +20,129 @@
   <link rel="stylesheet" href="css/main.css">
 
   <meta name="theme-color" content="#fafafa">
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=default"></script>
 </head>
 
 <body>
 
   <!-- Add your site or application content here -->
-  <p>Hello world! This is HTML5 Boilerplate.</p>
   <script src="js/vendor/modernizr-3.11.2.min.js"></script>
   <script src="js/plugins.js"></script>
   <script src="js/main.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
+  <div id="map"></div>
 
-  <!-- Google Analytics: change UA-XXXXX-Y to be your site's ID. -->
   <script>
-    window.ga = function () { ga.q.push(arguments) }; ga.q = []; ga.l = +new Date;
-    ga('create', 'UA-XXXXX-Y', 'auto'); ga('set', 'anonymizeIp', true); ga('set', 'transport', 'beacon'); ga('send', 'pageview')
+    const office = { lat: 37.727623143379745, lng: -122.47726223558236 };
+
+    (g=>{var h,a,k,p="The Google Maps JavaScript API",c="google",l="importLibrary",q="__ib__",m=document,b=window;b=b[c]||(b[c]={});var d=b.maps||(b.maps={}),r=new Set,e=new URLSearchParams,u=()=>h||(h=new Promise(async(f,n)=>{await (a=m.createElement("script"));e.set("libraries",[...r]+"");for(k in g)e.set(k.replace(/[A-Z]/g,t=>"_"+t[0].toLowerCase()),g[k]);e.set("callback",c+".maps."+q);a.src=`https://maps.${c}apis.com/maps/api/js?`+e;d[q]=f;a.onerror=()=>h=n(Error(p+" could not load."));a.nonce=m.querySelector("script[nonce]")?.nonce||"";m.head.append(a)}));d[l]?console.warn(p+" only loads once. Ignoring:",g):d[l]=(f,...n)=>r.add(f)&&u().then(()=>d[l](f,...n))})
+    ({key: "AIzaSyB41DRUbKWJHPxaFjMAwdrzWzbVKartNGg", v: "weekly"});
+    document.addEventListener('DOMContentLoaded', function () {
+      let map;
+
+      function createCenterControl(map, markers) {
+        const controlButton = document.createElement('button');
+
+        controlButton.style.backgroundColor = '#fff';
+        controlButton.style.border = '2px solid #fff';
+        controlButton.style.borderRadius = '3px';
+        controlButton.style.boxShadow = '0 2px 6px rgba(0,0,0,.3)';
+        controlButton.style.color = 'rgb(25,25,25)';
+        controlButton.style.cursor = 'pointer';
+        controlButton.style.fontFamily = 'Roboto,Arial,sans-serif';
+        controlButton.style.fontSize = '16px';
+        controlButton.style.lineHeight = '38px';
+        controlButton.style.margin = '8px 0 22px';
+        controlButton.style.padding = '0 5px';
+        controlButton.style.textAlign = 'center';
+
+        controlButton.textContent = 'Surprise me';
+        controlButton.title = 'Choose a random truck';
+        controlButton.type = 'button';
+
+        controlButton.addEventListener('click', () => {
+          const marker = markers[(Math.floor(Math.random() * markers.length))];
+          new google.maps.event.trigger( marker, 'click' );
+        });
+
+        return controlButton;
+      }
+
+      function addRandomButton(map, markers) {
+        const centerControlDiv = document.createElement('div');
+        const centerControl = createCenterControl(map, markers);
+        centerControlDiv.appendChild(centerControl);
+
+        map.controls[google.maps.ControlPosition.TOP_CENTER].push(centerControlDiv);
+      }
+
+      async function initMap() {
+        const { Map, InfoWindow } = await google.maps.importLibrary("maps");
+        const { AdvancedMarkerElement, PinElement } = await google.maps.importLibrary("marker");
+        addMarker = (title, position, content) => {
+          const marker = new AdvancedMarkerElement({
+            map,
+            title: title,
+            position: position,
+            content: content
+          });
+
+          marker.addListener("click", () => {
+            infoWindow.close();
+            infoWindow.setContent(marker.title);
+            infoWindow.open(marker.map, marker);
+          });
+          return marker;
+        }
+
+        map = new Map(document.getElementById("map"), {
+          center: office, 
+          zoom: 12,
+          mapId: "4504f8b37365c3d0"
+        });
+
+        const infoWindow = new InfoWindow();
+        const markers = [];
+
+        $.getJSON("https://data.sfgov.org/api/views/rqzj-sfat/rows.json", (trucks) => { 
+          trucks.data.sort((t1, t2) => {
+            const location1 = t1[31];
+            const lat1 = parseFloat(location1[1]);
+            const lng1 = parseFloat(location1[2]);
+            const angleRadians1 = Math.atan2(office.lat - lat1, office.lng - lng1);
+
+            const location2 = t2[31];
+            const lat2 = parseFloat(location2[1]);
+            const lng2 = parseFloat(location2[2]);
+
+            const angleRadians2 = Math.atan2(office.lat - lat2, office.lng - lng2);
+
+            return (angleRadians1 > angleRadians2) ? -1 : 1;
+          }).forEach((truck, i) => {
+            const title = truck[9];
+            const address = truck[13];
+            const location = truck[31];
+            const lat = parseFloat(location[1]);
+            const lng = parseFloat(location[2]);
+
+            markers.push(addMarker(`${title}<br>${address}`, {lat, lng}, new PinElement().element));
+          });
+
+          addMarker('Office', office, new PinElement({
+            glyphColor: "white",
+            background: "#0000FF",
+            borderColor: "#FFFFFF",
+            title: "Office",
+            scale: 2
+          }).element);
+        });
+
+        addRandomButton(map, markers);
+
+      }
+      initMap();
+    });
   </script>
-  <script src="https://www.google-analytics.com/analytics.js" async></script>
 </body>
 
 </html>

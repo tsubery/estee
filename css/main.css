@@ -15,6 +15,7 @@ html {
   color: #222;
   font-size: 1em;
   line-height: 1.4;
+  min-height: 100%;
 }
 
 /*
@@ -259,5 +260,13 @@ textarea {
   h3 {
     page-break-after: avoid;
   }
+}
+
+body {
+  height: 100vh;
+}
+
+#map {
+  height: 100%;
 }
 
